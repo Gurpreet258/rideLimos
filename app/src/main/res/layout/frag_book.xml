@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:animateLayoutChanges="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:id="@+id/bottomView"
+        android:layout_alignParentBottom="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_alignParentBottom="true"
+            android:id="@+id/bottomViewPrimary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <View
+                android:id="@+id/sep1"
+                android:background="#cccccc"
+                android:layout_width="match_parent"
+                android:layout_height="0.1dp"/>
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/car_types_bar"
+                android:background="#fefefe"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layoutManager="android.support.v7.widget.LinearLayoutManager"/>
+            <Button
+                android:id="@+id/btnbooknow"
+                android:text="BOOK NOW"
+                android:textColor="@android:color/white"
+                android:background="@drawable/blubtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_alignParentBottom="true"
+            android:id="@+id/bottomViewConf"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <View
+                android:background="#cccccc"
+                android:layout_width="match_parent"
+                android:layout_height="0.1dp"/>
+
+            <RelativeLayout
+                android:background="@android:color/white"
+                android:layout_width="match_parent"
+                android:layout_height="40dp">
+
+                <ImageView
+                    android:id="@+id/selCarImg"
+                    android:padding="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent" />
+
+                <TextView
+                    android:id="@+id/selCarInfo"
+                    android:gravity="center_vertical"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent" />
+
+            </RelativeLayout>
+
+            <View
+                android:background="#cccccc"
+                android:layout_width="match_parent"
+                android:layout_height="0.1dp"/>
+
+            <LinearLayout
+                android:background="@android:color/white"
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="80dp">
+
+                <LinearLayout
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent">
+
+                </LinearLayout>
+                <View
+                    android:background="#cccccc"
+                    android:layout_width="0.1dp"
+                    android:layout_height="match_parent"/>
+                <LinearLayout
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent">
+
+                </LinearLayout>
+                <View
+                    android:background="#cccccc"
+                    android:layout_width="0.1dp"
+                    android:layout_height="match_parent"/>
+                <LinearLayout
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent">
+
+                </LinearLayout>
+
+
+            </LinearLayout>
+
+            <View
+                android:background="#cccccc"
+                android:layout_width="match_parent"
+                android:layout_height="0.1dp"/>
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <Button
+                    android:id="@+id/btnbookconfirm"
+                    android:text="CONFIRM"
+                    android:textColor="@android:color/white"
+                    android:background="@drawable/blubtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content" />
+                <Button
+                    android:id="@+id/btnbookcancel"
+                    android:text="CANCEL"
+                    android:textColor="@android:color/white"
+                    android:background="@drawable/blubtn"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+<RelativeLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_above="@id/bottomView"
+    >
+
+    <fragment
+        xmlns:map="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+    <TextView
+        android:id="@+id/tvStartLoc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:background="@android:color/white"
+        tools:text="1529, Model town chd"
+        android:textColor="@android:color/black"
+        android:padding="5dp">
+
+    </TextView>
+
+    <TextView
+        android:id="@+id/tvDestLoc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvStartLoc"
+        android:layout_marginLeft="7dp"
+        android:layout_marginRight="7dp"
+        android:hint="@string/select_destination_location"
+        android:background="@drawable/style_grey_border"
+        android:textColor="@android:color/black"
+        android:padding="5dp">
+
+    </TextView>
+    <ImageView
+        android:id="@+id/ivStartLocPin"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_centerInParent="true"
+        android:visibility="visible"
+        android:src="@drawable/greenpin"/>
+<View
+    android:layout_width="2dp"
+    android:layout_height="match_parent"
+    android:layout_centerHorizontal="true"
+    android:background="@drawable/vertical_dashed_line"
+    android:layout_below="@id/tvStartLoc"
+    android:layout_above="@id/ivStartLocPin"/>
+
+    <ImageView
+        android:id="@+id/ivDesLocPin"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_centerInParent="true"
+        android:visibility="gone"
+        android:src="@drawable/redpin"/>
+</RelativeLayout>
+    <RelativeLayout
+        android:id="@+id/circleOverlay"
+        android:layout_width="match_parent"
+        android:visibility="gone"
+        android:layout_height="match_parent">
+    <com.ridelimos.ridelimos.helpers.CircleOverlayView
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:visibility="visible"
+        android:layout_height="match_parent">
+    </com.ridelimos.ridelimos.helpers.CircleOverlayView>
+        <com.mikhaellopez.circularprogressbar.CircularProgressBar
+            android:id="@+id/circleProgress"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            android:visibility="invisible"
+            android:layout_centerInParent="true"
+            app:cpb_background_progressbar_color="@android:color/holo_red_light"
+            app:cpb_background_progressbar_width="2dp"
+            app:cpb_progressbar_color="@android:color/holo_red_dark"
+            app:cpb_progressbar_width="10dp" />
+        <TextView
+            android:id="@+id/tvFindingRoute"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:text="@string/finding_route"
+            android:layout_below="@id/circleProgress"
+            android:layout_centerHorizontal="true"
+            android:textColor="#333333"
+            android:padding="5dp">
+
+        </TextView>
+        <ImageView
+            android:id="@+id/ivCancelOverlay"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:tint="#000"
+            android:tintMode="src_in"
+            android:layout_below="@id/tvFindingRoute"
+            android:layout_centerHorizontal="true"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"/>
+    </RelativeLayout>
+</RelativeLayout>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/llMain"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+
+
+    android:orientation="vertical">
+    <View
+        android:id="@+id/viewHeader"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:visibility="invisible"
+        android:background="@color/colorPrimary"/>
+
+    <ImageView
+        android:id="@+id/car_photo"
+        android:layout_width="85dp"
+        android:layout_height="40dp"
+        android:paddingLeft="4dp"
+        android:paddingRight="4dp"
+        android:layout_gravity="center"
+        android:gravity="center"/>
+
+    <TextView
+        android:id="@+id/car_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:paddingBottom="4dp"
+        android:maxEms="6"
+        android:maxLines="2"
+        android:textColor="#000000"
+        android:textSize="13sp" />
+    <TextView
+        android:id="@+id/car_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxEms="6"
+        android:maxLines="2"
+        android:textColor="#000000"
+        android:textSize="12sp" />
+</LinearLayout>
+
+

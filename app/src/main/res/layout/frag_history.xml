@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.ridelimos.ridelimos.helpers.SegmentedControl
+        android:id="@+id/segmented_control"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <com.ridelimos.ridelimos.helpers.SegmentedControlButton android:id="@+id/opt_1" android:text="Pending" />
+        <com.ridelimos.ridelimos.helpers.SegmentedControlButton android:id="@+id/opt_2" android:text="Completed" />
+        <com.ridelimos.ridelimos.helpers.SegmentedControlButton android:id="@+id/opt_3" android:text="Cancelled" />
+    </com.ridelimos.ridelimos.helpers.SegmentedControl>
+
+    <ListView
+        android:id="@+id/listview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </ListView>
+
+</LinearLayout>

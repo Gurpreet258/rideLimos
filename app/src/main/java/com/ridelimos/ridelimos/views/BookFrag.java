@@ -14,6 +14,7 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -245,9 +246,12 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
                 i=0;
                 circularProgressBar.setProgress(0);
                 overlay.setVisibility(View.VISIBLE);
+                circleOverlayView.removeAllViews();
                 customView = new CustomView(getActivity());
+
+                customView.postInvalidate();
                 circleOverlayView.addView(customView);
-                startViewAnimation();
+                startViewAnimation(customView);
                 //--- time to complete progress -----
                 int animationDuration = 30000; // milli second
                 circularProgressBar.setProgressWithAnimation(100, animationDuration);
@@ -541,6 +545,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
 
     public void showConfView() {
         primaryBottomView.setVisibility(View.GONE);
+        dottedView.setVisibility(View.GONE);
         confBottomView.setVisibility(View.VISIBLE);
        /* YoYo.with(Techniques.SlideInUp)
                 .duration(10000)
@@ -909,18 +914,19 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
 
 
     //--- Custom animation function
-    public void startViewAnimation() {
-        customView.invalidate();
+    public void startViewAnimation(final CustomView customView) {
         timer = new Timer();
         try {
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
                     if (i < 70) { // Please change '70' according to how long you want to go
+                        if(getActivity()==null)
+                            return;
                         getActivity().runOnUiThread(new Runnable() {
+
                             @Override
                             public void run() {
-
                                 int baseRadius = 80; // base radius is basic radius of circle from which to start animation
                                 customView.updateView(i + baseRadius);
                                 i++;

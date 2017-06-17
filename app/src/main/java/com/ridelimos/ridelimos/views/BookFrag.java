@@ -1,12 +1,8 @@
 package com.ridelimos.ridelimos.views;
 
 import android.Manifest;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
@@ -20,10 +16,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -34,14 +27,11 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.TranslateAnimation;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.daimajia.androidanimations.library.Techniques;
 import com.daimajia.androidanimations.library.YoYo;
@@ -62,15 +52,14 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.mikhaellopez.circularprogressbar.CircularProgressBar;
 import com.ridelimos.ridelimos.R;
 import com.ridelimos.ridelimos.adapters.CarTypesAdapter;
 import com.ridelimos.ridelimos.helpers.ApiClient;
@@ -86,11 +75,11 @@ import com.ridelimos.ridelimos.util.Utility;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -107,7 +96,13 @@ import static com.google.android.gms.internal.zzt.TAG;
  * Created by zebarahman on 6/10/17.
  */
 
-public class BookFrag extends Fragment implements OnMapReadyCallback,LocationListener,GoogleApiClient.ConnectionCallbacks,GoogleApiClient.OnConnectionFailedListener {
+public class BookFrag extends Fragment implements OnMapReadyCallback, LocationListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+
+
+    //--- custom view intiallizer
+    private int i = 1;
+    CustomView customView;
+    //--- /custom view intiallizer
 
     private static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 5001;
     private static final int PLACE_AUTOCOMPLETE_REQUEST_CODE_DEST = 5002;
@@ -119,37 +114,38 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
     private static int FATEST_INTERVAL = 5000; // 5 sec
     private static int DISPLACEMENT = 10; // 10 meters
 
-    private LatLng originLatlong,desLatlong;
+    private LatLng originLatlong, desLatlong;
 
     private static final long MIN_TIME = 400;
     private static final float MIN_DISTANCE = 0;
     private LocationManager locationManager;
-    Marker mymark,originMark,desMark;
+    Marker mymark, originMark, desMark;
     View view;
     RecyclerView car_types_bar;
-    ApiInterface apiService,googleApiService;
+    ApiInterface apiService, googleApiService;
     private GoogleMap mMap;
     CarTypesAdapter ctAdapter;
     ArrayList<CarType> cartypes;
     ArrayList<Car> cars;
-    LatLng fromcoords,tocoords;
+    LatLng fromcoords, tocoords;
     Boolean z = false;
     CarType selectedCarType;
     int sel;
     ImageView selCarImg;
     TextView selCarInfo, ratecard, walletinfo, estimateinfo, couponinfo;
-    LinearLayout primaryBottomView,confBottomView;
-    Button btnbooknow,btnconfbooking, btnbookcancel;
+    LinearLayout primaryBottomView, confBottomView;
+    Button btnbooknow, btnconfbooking, btnbookcancel;
     RelativeLayout overlay;
-
-    TextView tvStartLoc,tvDesLoc;
-    ImageView ivStartLocPin,ivDesLocPin,ivCancelOverlay;
+    CircleOverlayView circleOverlayView;
+    CircularProgressBar circularProgressBar;
+    TextView tvStartLoc, tvDesLoc;
+    ImageView ivStartLocPin, ivDesLocPin, ivCancelOverlay;
     private GoogleApiClient mGoogleApiClient;
 
     private TextView currentView;
     private Polyline polyline;
-    private View mapView,dottedView;
-    LinearLayout circleView;
+    private View mapView, dottedView;
+    View circleView;
     private ArrayList<String> listPermissionsNeeded;
 
 
@@ -169,15 +165,16 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
 
         apiService = ApiClient.getClient().create(ApiInterface.class);
         googleApiService = ApiClient.getGoogleApiInterface().create(ApiInterface.class);
-
+        circleOverlayView = (CircleOverlayView) view.findViewById(R.id.overlay);
+        circularProgressBar = (CircularProgressBar) view.findViewById(R.id.circleProgress);
         primaryBottomView = (LinearLayout) view.findViewById(R.id.bottomViewPrimary);
         confBottomView = (LinearLayout) view.findViewById(R.id.bottomViewConf);
         selCarImg = (ImageView) view.findViewById(R.id.selCarImg);
         selCarInfo = (TextView) view.findViewById(R.id.selCarInfo);
 
-        ivStartLocPin= (ImageView) view.findViewById(R.id.ivStartLocPin);
-        ivDesLocPin= (ImageView) view.findViewById(R.id.ivDesLocPin);
-        ivCancelOverlay= (ImageView) view.findViewById(R.id.ivCancelOverlay);
+        ivStartLocPin = (ImageView) view.findViewById(R.id.ivStartLocPin);
+        ivDesLocPin = (ImageView) view.findViewById(R.id.ivDesLocPin);
+        ivCancelOverlay = (ImageView) view.findViewById(R.id.ivCancelOverlay);
 
         apiService = ApiClient.getClient().create(ApiInterface.class);
         car_types_bar = (RecyclerView) view.findViewById(R.id.car_types_bar);
@@ -187,19 +184,19 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
         btnconfbooking = (Button) view.findViewById(R.id.btnbookconfirm);
         btnbookcancel = (Button) view.findViewById(R.id.btnbookcancel);
         overlay = (RelativeLayout) view.findViewById(R.id.circleOverlay);
-        tvStartLoc= (TextView) view.findViewById(R.id.tvStartLoc);
-        tvDesLoc= (TextView) view.findViewById(R.id.tvDestLoc);
+        tvStartLoc = (TextView) view.findViewById(R.id.tvStartLoc);
+        tvDesLoc = (TextView) view.findViewById(R.id.tvDestLoc);
 
-        dottedView=view.findViewById(R.id.viewDotted);
-        circleView=(LinearLayout)view.findViewById(R.id.viewCircle);
-        currentView=tvStartLoc;
+        dottedView = view.findViewById(R.id.viewDotted);
+        circleView = (View) view.findViewById(R.id.viewCircle);
+        currentView = tvStartLoc;
 
 
         tvStartLoc.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-              //  ivStartLocPin.setVisibility(View.VISIBLE);
-                findPlace(v,0);
+                //  ivStartLocPin.setVisibility(View.VISIBLE);
+                findPlace(v, 0);
             }
         });
         tvDesLoc.setOnClickListener(new View.OnClickListener() {
@@ -207,7 +204,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
             public void onClick(View v) {
              /*   ivDesLocPin.setVisibility(View.VISIBLE);
                 */
-                findPlace(v,1);
+                findPlace(v, 1);
             }
         });
 
@@ -234,11 +231,16 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
             @Override
             public void onClick(View v) {
                 overlay.setVisibility(View.VISIBLE);
+                customView = new CustomView(getActivity());
+                circleOverlayView.addView(customView);
+                startViewAnimation();
+                int animationDuration = 30000; // 2500ms = 2,5s
+                circularProgressBar.setProgressWithAnimation(100, animationDuration);
                 hideConfView();
                 primaryBottomView.setVisibility(View.GONE);
                 //set animation
                 YoYo.with(Techniques.FadeOut)
-                        .duration(1000)
+                        .duration(10000)
                         .repeat(50)
                         .playOn(circleView);
                 //handler.sendEmptyMessageDelayed(11,30000);
@@ -272,15 +274,16 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
     private void setUpMapIfNeeded() {
         SupportMapFragment supportMapFragment = ((SupportMapFragment) this.getChildFragmentManager().findFragmentById(R.id.map));
         supportMapFragment.getMapAsync(this);
-        mapView=supportMapFragment.getView();
+        mapView = supportMapFragment.getView();
     }
 
-    protected void permissionsRequest(){
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+    protected void permissionsRequest() {
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkAndRequestPermissions();
             return;
         }
     }
+
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -314,23 +317,24 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
             @Override
             public void onCameraChange(CameraPosition cameraPosition) {
 
-                Address address=getLocationFromLatLong(cameraPosition.target.latitude,cameraPosition.target.longitude);
-                if(address!=null ) {
-                    originLatlong=new LatLng(cameraPosition.target.latitude,cameraPosition.target.longitude);
-                    currentView.setText(address.getAddressLine(0)+" "+address.getAddressLine(1));
+                Address address = getLocationFromLatLong(cameraPosition.target.latitude, cameraPosition.target.longitude);
+                if (address != null) {
+                    originLatlong = new LatLng(cameraPosition.target.latitude, cameraPosition.target.longitude);
+                    currentView.setText(address.getAddressLine(0) + " " + address.getAddressLine(1));
                 }
-                Log.i("centerLat",cameraPosition.target.latitude+"");
+                Log.i("centerLat", cameraPosition.target.latitude + "");
 
-                Log.i("centerLong",cameraPosition.target.longitude+"");
+                Log.i("centerLong", cameraPosition.target.longitude + "");
             }
         });
 
 
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
-        try{
+        try {
             mMap.setMyLocationEnabled(true);
-        } catch(SecurityException e) { }
+        } catch (SecurityException e) {
+        }
 
        /* boolean statusOfGPS = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         if (statusOfGPS == false) {
@@ -352,10 +356,10 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 10);
         mMap.animateCamera(cameraUpdate);
-        originLatlong=new LatLng(location.getLatitude(),location.getLongitude());
-        Address address=getLocationFromLatLong(location.getLatitude(),location.getLongitude());
-        if(address!=null)
-        tvStartLoc.setText(address.getAddressLine(0)+" "+address.getAddressLine(1));
+        originLatlong = new LatLng(location.getLatitude(), location.getLongitude());
+        Address address = getLocationFromLatLong(location.getLatitude(), location.getLongitude());
+        if (address != null)
+            tvStartLoc.setText(address.getAddressLine(0) + " " + address.getAddressLine(1));
       /*  mymark = mMap.addMarker(new MarkerOptions().title("Location")
                 .icon(BitmapDescriptorFactory.fromBitmap(resizeMapIcons("greenpin",100,80)))
                 .position(new LatLng(location.getLatitude(), location.getLongitude())).draggable(true).visible(true));
@@ -365,7 +369,6 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
         catch (SecurityException e) { }*/
 
     }
-
 
 
     @Override
@@ -388,14 +391,14 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
         Call<ResponseBody> call = apiService.getCarTypes(Helper.getSavedToken());
         call.enqueue(new Callback<ResponseBody>() {
             @Override
-            public void onResponse(Call<ResponseBody>call, Response<ResponseBody> response) {
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     if (response.isSuccessful()) {
                         JSONObject res = new JSONObject(response.body().string());
                         JSONArray data = res.getJSONArray("carcategories");
                         for (int i = 0; i < data.length(); i++) {
                             JSONObject c = data.getJSONObject(i);
-                            CarType ct = new CarType(c.getInt("id"),c.getString("title"),c.getString("appicon"),"no cars");
+                            CarType ct = new CarType(c.getInt("id"), c.getString("title"), c.getString("appicon"), "no cars");
                             cartypes.add(ct);
                         }
                         setCarTypes();
@@ -409,29 +412,31 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
             }
 
             @Override
-            public void onFailure(Call<ResponseBody>call, Throwable t) {
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
                 Log.e("login error response", t.toString());
             }
         });
     }
 
     public void setCarTypes() {
-        ctAdapter = new CarTypesAdapter(getActivity(),cartypes);
+        ctAdapter = new CarTypesAdapter(getActivity(), cartypes);
         car_types_bar.setAdapter(ctAdapter);
     }
 
     public void tryEstimate() {
-        if (fromcoords == null || tocoords == null || selectedCarType == null) { }
-        else { getEstimate(); }
+        if (fromcoords == null || tocoords == null || selectedCarType == null) {
+        } else {
+            getEstimate();
+        }
     }
 
     public void getEstimate() {
-        String bodystr = "{\"from_lat\":" + fromcoords.latitude + ",\"from_lon\":" + fromcoords.longitude + ",\"to_lat\":"+ tocoords.latitude + ",\"to_lon\":" + tocoords.longitude + ",\"vehicle_type_id\":" + selectedCarType.getId() + ",\"time\":15,\"company_id\":5}";
+        String bodystr = "{\"from_lat\":" + fromcoords.latitude + ",\"from_lon\":" + fromcoords.longitude + ",\"to_lat\":" + tocoords.latitude + ",\"to_lon\":" + tocoords.longitude + ",\"vehicle_type_id\":" + selectedCarType.getId() + ",\"time\":15,\"company_id\":5}";
         RequestBody body = RequestBody.create(MediaType.parse("text/plain"), bodystr);
-        Call<ResponseBody> call = apiService.getEstimate(Helper.getSavedToken(),body);
+        Call<ResponseBody> call = apiService.getEstimate(Helper.getSavedToken(), body);
         call.enqueue(new Callback<ResponseBody>() {
             @Override
-            public void onResponse(Call<ResponseBody>call, Response<ResponseBody> response) {
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     if (response.isSuccessful()) {
                         JSONObject res = new JSONObject(response.body().string());
@@ -446,7 +451,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
             }
 
             @Override
-            public void onFailure(Call<ResponseBody>call, Throwable t) {
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
                 Log.e("login error response", t.toString());
             }
         });
@@ -460,10 +465,10 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
     public void getRates() {
         String bodystr = "{\"company_id\":5}";
         RequestBody body = RequestBody.create(MediaType.parse("text/plain"), bodystr);
-        Call<ResponseBody> call = apiService.getRateCards(Helper.getSavedToken(),body);
+        Call<ResponseBody> call = apiService.getRateCards(Helper.getSavedToken(), body);
         call.enqueue(new Callback<ResponseBody>() {
             @Override
-            public void onResponse(Call<ResponseBody>call, Response<ResponseBody> response) {
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     if (response.isSuccessful()) {
                         JSONObject res = new JSONObject(response.body().string());
@@ -478,19 +483,19 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
             }
 
             @Override
-            public void onFailure(Call<ResponseBody>call, Throwable t) {
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
                 Log.e("login error response", t.toString());
             }
         });
     }
 
     public void makeOrder() {
-        String bodystr = "{\"lat\":"+fromcoords.latitude+",\"lon\":"+fromcoords.longitude+",\"address\":\""+ "" +"\",\"carType\":"+ selectedCarType.getId() +"}";
+        String bodystr = "{\"lat\":" + fromcoords.latitude + ",\"lon\":" + fromcoords.longitude + ",\"address\":\"" + "" + "\",\"carType\":" + selectedCarType.getId() + "}";
         RequestBody body = RequestBody.create(MediaType.parse("text/plain"), bodystr);
-        Call<ResponseBody> call = apiService.makeOrder(Helper.getSavedToken(),body);
+        Call<ResponseBody> call = apiService.makeOrder(Helper.getSavedToken(), body);
         call.enqueue(new Callback<ResponseBody>() {
             @Override
-            public void onResponse(Call<ResponseBody>call, Response<ResponseBody> response) {
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     if (response.isSuccessful()) {
                         JSONObject res = new JSONObject(response.body().string());
@@ -505,7 +510,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
             }
 
             @Override
-            public void onFailure(Call<ResponseBody>call, Throwable t) {
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
                 Log.e("login error response", t.toString());
             }
         });
@@ -553,26 +558,26 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
     }
 
 
-     public Address getLocationFromLatLong(double latitude,double longitude){
-         Geocoder geocoder;
-         List<Address> addresses;
-         geocoder = new Geocoder(getActivity(), Locale.getDefault());
+    public Address getLocationFromLatLong(double latitude, double longitude) {
+        Geocoder geocoder;
+        List<Address> addresses;
+        geocoder = new Geocoder(getActivity(), Locale.getDefault());
 
-         try {
-             addresses = geocoder.getFromLocation(latitude, longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
-             String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
-             String city = addresses.get(0).getLocality();
-             String state = addresses.get(0).getAdminArea();
-             String country = addresses.get(0).getCountryName();
-             String postalCode = addresses.get(0).getPostalCode();
-             String knownName = addresses.get(0).getFeatureName();
-             return addresses.get(0);
-         } catch (Exception e) {
-             e.printStackTrace();
-         }
+        try {
+            addresses = geocoder.getFromLocation(latitude, longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
+            String address = addresses.get(0).getAddressLine(0); // If any additional address line present than only, check with max available address lines by getMaxAddressLineIndex()
+            String city = addresses.get(0).getLocality();
+            String state = addresses.get(0).getAdminArea();
+            String country = addresses.get(0).getCountryName();
+            String postalCode = addresses.get(0).getPostalCode();
+            String knownName = addresses.get(0).getFeatureName();
+            return addresses.get(0);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        return  null;
-     }
+        return null;
+    }
 
 
     @Override
@@ -589,7 +594,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
 
     /**
      * Creating location request object
-     * */
+     */
     protected void createLocationRequest() {
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(UPDATE_INTERVAL);
@@ -600,11 +605,10 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
 
     /**
      * Starting the location updates
-     * */
+     */
     protected void startLocationUpdates() {
 
-        LocationServices.FusedLocationApi.requestLocationUpdates(
-                mGoogleApiClient, mLocationRequest, this);
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
 
     }
 
@@ -619,20 +623,20 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
 
     /**
      * Creating google api client object
-     * */
+     */
     protected synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
                 .addConnectionCallbacks(this)
                 .addApi(Places.GEO_DATA_API)
                 .addApi(Places.PLACE_DETECTION_API)
-                .enableAutoManage(getActivity(),this)
+                .enableAutoManage(getActivity(), this)
                 .addApi(LocationServices.API).build();
         mGoogleApiClient.connect();
 
     }
 
-    public void findPlace(View view,int type) {
-        currentView= (TextView) view;
+    public void findPlace(View view, int type) {
+        currentView = (TextView) view;
         try {
 
             AutocompleteFilter typeFilter = new AutocompleteFilter.Builder()
@@ -643,8 +647,8 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
                     new PlaceAutocomplete.IntentBuilder(PlaceAutocomplete.MODE_FULLSCREEN)
                             .setFilter(typeFilter)
                             .build(getActivity());
-            if(type==0) //origin
-            startActivityForResult(intent, PLACE_AUTOCOMPLETE_REQUEST_CODE);
+            if (type == 0) //origin
+                startActivityForResult(intent, PLACE_AUTOCOMPLETE_REQUEST_CODE);
             else
                 startActivityForResult(intent, PLACE_AUTOCOMPLETE_REQUEST_CODE_DEST);
 
@@ -657,46 +661,45 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        
+
     }
 
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-            if (resultCode == RESULT_OK) {
-                if (requestCode == PLACE_AUTOCOMPLETE_REQUEST_CODE) {
-                    Place place = PlaceAutocomplete.getPlace(getActivity(), data);
-                    if (place == null)
-                        return;
-                    originLatlong=place.getLatLng();
+        if (resultCode == RESULT_OK) {
+            if (requestCode == PLACE_AUTOCOMPLETE_REQUEST_CODE) {
+                Place place = PlaceAutocomplete.getPlace(getActivity(), data);
+                if (place == null)
+                    return;
+                originLatlong = place.getLatLng();
 
-                    updateCamera(place.getLatLng());
-                    Address address=getLocationFromLatLong(place.getLatLng().latitude,place.getLatLng().longitude);
-                    currentView.setText(address.getAddressLine(0)+" "+address.getAddressLine(1));
-                    if(desLatlong!=null)
-                        getDestinationRoute(originLatlong,desLatlong);
+                updateCamera(place.getLatLng());
+                Address address = getLocationFromLatLong(place.getLatLng().latitude, place.getLatLng().longitude);
+                currentView.setText(address.getAddressLine(0) + " " + address.getAddressLine(1));
+                if (desLatlong != null)
+                    getDestinationRoute(originLatlong, desLatlong);
 
-                    Log.i(TAG, "Place: " + place.getName());
-                }
-                else if (requestCode == PLACE_AUTOCOMPLETE_REQUEST_CODE_DEST) {
-                    Place place = PlaceAutocomplete.getPlace(getActivity(), data);
-                    if (place == null)
-                        return;
-                    desLatlong=place.getLatLng();
+                Log.i(TAG, "Place: " + place.getName());
+            } else if (requestCode == PLACE_AUTOCOMPLETE_REQUEST_CODE_DEST) {
+                Place place = PlaceAutocomplete.getPlace(getActivity(), data);
+                if (place == null)
+                    return;
+                desLatlong = place.getLatLng();
 
-                    Address address=getLocationFromLatLong(place.getLatLng().latitude,place.getLatLng().longitude);
-                    currentView.setText(address.getAddressLine(0)+" "+address.getAddressLine(1));
-                    getDestinationRoute(originLatlong,place.getLatLng());
-                }
-                } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
-                Status status = PlaceAutocomplete.getStatus(getActivity(), data);
-                // TODO: Handle the error.
-                Log.i(TAG, status.getStatusMessage());
-
-            } else if (resultCode == RESULT_CANCELED) {
-                // The user canceled the operation.
+                Address address = getLocationFromLatLong(place.getLatLng().latitude, place.getLatLng().longitude);
+                currentView.setText(address.getAddressLine(0) + " " + address.getAddressLine(1));
+                getDestinationRoute(originLatlong, place.getLatLng());
             }
+        } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
+            Status status = PlaceAutocomplete.getStatus(getActivity(), data);
+            // TODO: Handle the error.
+            Log.i(TAG, status.getStatusMessage());
+
+        } else if (resultCode == RESULT_CANCELED) {
+            // The user canceled the operation.
+        }
 
 
     }
@@ -704,34 +707,35 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
 
     /**
      * Method to get route to destination
-     * @param origin lat,long
+     *
+     * @param origin      lat,long
      * @param destination lat,long
      */
     public void getDestinationRoute(final LatLng origin, final LatLng destination) {
 
 
-        googleApiService.getRoute(origin.latitude+","+origin.longitude,
-                destination.latitude+","+destination.longitude,getString(R.string.google_maps_key)).
+        googleApiService.getRoute(origin.latitude + "," + origin.longitude,
+                destination.latitude + "," + destination.longitude, getString(R.string.google_maps_key)).
                 enqueue(new Callback<Direction>() {
                             @Override
                             public void onResponse(Call<Direction> call, Response<Direction> response) {
-                               Direction direction=response.body();
-                                if(direction.getRoutes().size()==0){
+                                Direction direction = response.body();
+                                if (direction.getRoutes().size() == 0) {
                                     return;
                                 }
-                                if(mMap==null)
+                                if (mMap == null)
                                     return;
                                 mMap.clear();
                                 ivStartLocPin.setVisibility(View.GONE);
                                 dottedView.setVisibility(View.GONE);
                                 mMap.setOnCameraChangeListener(null);
-                                OverviewPolyline overviewPolyline=direction.getRoutes().get(0).getOverviewPolyline();
+                                OverviewPolyline overviewPolyline = direction.getRoutes().get(0).getOverviewPolyline();
 
-                                List<LatLng> polylines= Utility.decodeDirectionsPolyline(overviewPolyline.getPoints());
+                                List<LatLng> polylines = Utility.decodeDirectionsPolyline(overviewPolyline.getPoints());
 
                                 PolylineOptions options = new PolylineOptions().width(5).color(Color.parseColor("#2d5d99")).geodesic(true);
                                 options.addAll(polylines);
-                                polyline=mMap.addPolyline(options);
+                                polyline = mMap.addPolyline(options);
 
 
                                 LatLngBounds.Builder builder = new LatLngBounds.Builder();
@@ -757,8 +761,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
     }
 
 
-
-    private void updateCamera(LatLng latLng){
+    private void updateCamera(LatLng latLng) {
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 10);
         mMap.animateCamera(cameraUpdate);
     }
@@ -770,7 +773,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
         mGoogleApiClient.disconnect();
     }
 
-    Handler handler=new Handler(){
+    Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
@@ -778,7 +781,8 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
             primaryBottomView.setVisibility(View.VISIBLE);
         }
     };
-    private  boolean checkAndRequestPermissions() {
+
+    private boolean checkAndRequestPermissions() {
         int permissionStorage = ContextCompat.checkSelfPermission(getActivity(),
                 Manifest.permission.WRITE_EXTERNAL_STORAGE);
         int locationPermission = ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION);
@@ -791,7 +795,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
         }
 
         if (!listPermissionsNeeded.isEmpty()) {
-            ActivityCompat.requestPermissions(getActivity(), listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),REQUEST_CODE_ASK_PERMISSIONS);
+            ActivityCompat.requestPermissions(getActivity(), listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), REQUEST_CODE_ASK_PERMISSIONS);
             return false;
         }
         return true;
@@ -802,12 +806,12 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
             case REQUEST_CODE_ASK_PERMISSIONS:
-                for(int i=0;i<listPermissionsNeeded.size();i++){
-                    if(grantResults[i]== PackageManager.PERMISSION_DENIED){
+                for (int i = 0; i < listPermissionsNeeded.size(); i++) {
+                    if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
                         //do your stuff
                        /* Toast.makeText(getActivity(), "some permissions Denied", Toast.LENGTH_SHORT)
                                 .show();*/
-                       getActivity().finish();
+                        getActivity().finish();
                         break;
 
                     }
@@ -820,6 +824,26 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
         }
     }
 
-
+    //--- Custom animation function
+    public void startViewAnimation() {
+        final Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                if (i < 70) { // Please change '70' according to how long you want to go
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            int baseRadius = 20; // base radius is basic radius of circle from which to start animation
+                            customView.updateView(i + baseRadius);
+                            i++;
+                        }
+                    });
+                } else {
+                    i = 0;
+                }
+            }
+        }, 0, 10); // change '500' to milliseconds for how frequent you want to update radius
+    }
 }
 

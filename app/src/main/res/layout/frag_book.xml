@@ -224,13 +224,13 @@
             android:id="@+id/circleProgress"
             android:layout_width="180dp"
             android:layout_height="180dp"
-            android:visibility="invisible"
+            app:cpb_progress = "0"
             android:layout_centerInParent="true"
             app:cpb_background_progressbar_color="@android:color/holo_red_light"
-            app:cpb_background_progressbar_width="2dp"
+            app:cpb_background_progressbar_width="10dp"
             app:cpb_progressbar_color="@android:color/holo_red_dark"
             app:cpb_progressbar_width="10dp" />
-        <LinearLayout
+        <View
             android:id="@+id/viewCircle"
             android:layout_width="180dp"
             android:layout_height="180dp"

@@ -79,7 +79,7 @@ public class CircleOverlayView extends LinearLayout {
         float centerY = getHeight() / 2;
         float radius = getResources().getDimensionPixelSize(R.dimen.radius);
         osCanvas.drawCircle(centerX, centerY, radius, paint);
-        osCanvas.drawCircle(centerX, centerY, radius, mStrokePaint);
+//        osCanvas.drawCircle(centerX, centerY, radius, mStrokePaint);
     }
 
     @Override

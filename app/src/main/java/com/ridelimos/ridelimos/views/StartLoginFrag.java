@@ -156,58 +156,6 @@ public class StartLoginFrag extends Fragment {
     }
 
 
-    private  boolean checkAndRequestPermissions() {
-        int permissionStorage = ContextCompat.checkSelfPermission(getActivity(),
-                Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        int locationPermission = ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION);
-        int callPermission = ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.CALL_PHONE);
-        checkGrantedPermissions(getActivity());
-        listPermissionsNeeded = new ArrayList<>();
-        if (locationPermission != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        }
-        if (permissionStorage != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        }
 
-        if (!listPermissionsNeeded.isEmpty()) {
-            ActivityCompat.requestPermissions(getActivity(), listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),REQUEST_CODE_ASK_PERMISSIONS);
-            return false;
-        }
-        return true;
-    }
-    //for multiple permissions
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        switch (requestCode) {
-            case REQUEST_CODE_ASK_PERMISSIONS:
-                checkGrantedPermissions(getActivity());
-                for(int i=0;i<listPermissionsNeeded.size();i++){
-                    if(grantResults[i]==PackageManager.PERMISSION_DENIED){
-                        //do your stuff
-                       /* Toast.makeText(getActivity(), "some permissions Denied", Toast.LENGTH_SHORT)
-                                .show();*/
-                        break;
 
-                    }
-
-                }
-                Intent j = new Intent(getActivity(), MainActivity.class);
-                getActivity().finish();
-                startActivity(j);
-                break;
-            default:
-                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
-    }
-
-    protected void checkGrantedPermissions(Context context){
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ) {
-            Log.d("permissions","location_granted");
-        }
-
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            Log.d("permissions","storage_granted");
-        }
-    }
 }

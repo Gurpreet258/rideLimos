@@ -193,7 +193,8 @@
         android:visibility="visible"
         android:src="@drawable/greenpin"/>
 <View
-    android:layout_width="2dp"
+    android:id="@+id/viewDotted"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_centerHorizontal="true"
     android:background="@drawable/vertical_dashed_line"
@@ -229,6 +230,12 @@
             app:cpb_background_progressbar_width="2dp"
             app:cpb_progressbar_color="@android:color/holo_red_dark"
             app:cpb_progressbar_width="10dp" />
+        <LinearLayout
+            android:id="@+id/viewCircle"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            android:background="@drawable/style_circle"
+            android:layout_centerInParent="true"/>
         <TextView
             android:id="@+id/tvFindingRoute"
             android:layout_width="wrap_content"

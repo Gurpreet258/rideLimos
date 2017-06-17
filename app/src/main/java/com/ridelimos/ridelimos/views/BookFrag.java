@@ -1,8 +1,10 @@
 package com.ridelimos.ridelimos.views;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -10,14 +12,17 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -38,6 +43,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.daimajia.androidanimations.library.Techniques;
+import com.daimajia.androidanimations.library.YoYo;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.common.GooglePlayServicesRepairableException;
@@ -104,6 +111,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
 
     private static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 5001;
     private static final int PLACE_AUTOCOMPLETE_REQUEST_CODE_DEST = 5002;
+    private static final int REQUEST_CODE_ASK_PERMISSIONS = 5003;
     private LocationRequest mLocationRequest;
 
     // Location updates intervals in sec
@@ -140,7 +148,9 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
 
     private TextView currentView;
     private Polyline polyline;
-    private View mapView;
+    private View mapView,dottedView;
+    LinearLayout circleView;
+    private ArrayList<String> listPermissionsNeeded;
 
 
     @Override
@@ -180,8 +190,11 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
         tvStartLoc= (TextView) view.findViewById(R.id.tvStartLoc);
         tvDesLoc= (TextView) view.findViewById(R.id.tvDestLoc);
 
-
+        dottedView=view.findViewById(R.id.viewDotted);
+        circleView=(LinearLayout)view.findViewById(R.id.viewCircle);
         currentView=tvStartLoc;
+
+
         tvStartLoc.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -223,6 +236,11 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
                 overlay.setVisibility(View.VISIBLE);
                 hideConfView();
                 primaryBottomView.setVisibility(View.GONE);
+                //set animation
+                YoYo.with(Techniques.FadeOut)
+                        .duration(1000)
+                        .repeat(50)
+                        .playOn(circleView);
                 //handler.sendEmptyMessageDelayed(11,30000);
             }
         });
@@ -237,6 +255,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
 
         //init
 
+        permissionsRequest();
         hideConfView();
 
         buildGoogleApiClient();
@@ -256,6 +275,12 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
         mapView=supportMapFragment.getView();
     }
 
+    protected void permissionsRequest(){
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+            checkAndRequestPermissions();
+            return;
+        }
+    }
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -489,7 +514,6 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
     public void showConfView() {
         primaryBottomView.setVisibility(View.GONE);
         confBottomView.setVisibility(View.VISIBLE);
-
        /* confBottomView.setAlpha(0.0f);
 
 // Start the animation
@@ -699,6 +723,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
                                     return;
                                 mMap.clear();
                                 ivStartLocPin.setVisibility(View.GONE);
+                                dottedView.setVisibility(View.GONE);
                                 mMap.setOnCameraChangeListener(null);
                                 OverviewPolyline overviewPolyline=direction.getRoutes().get(0).getOverviewPolyline();
 
@@ -753,6 +778,47 @@ public class BookFrag extends Fragment implements OnMapReadyCallback,LocationLis
             primaryBottomView.setVisibility(View.VISIBLE);
         }
     };
+    private  boolean checkAndRequestPermissions() {
+        int permissionStorage = ContextCompat.checkSelfPermission(getActivity(),
+                Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        int locationPermission = ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION);
+        listPermissionsNeeded = new ArrayList<>();
+        if (locationPermission != PackageManager.PERMISSION_GRANTED) {
+            listPermissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+        if (permissionStorage != PackageManager.PERMISSION_GRANTED) {
+            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+
+        if (!listPermissionsNeeded.isEmpty()) {
+            ActivityCompat.requestPermissions(getActivity(), listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),REQUEST_CODE_ASK_PERMISSIONS);
+            return false;
+        }
+        return true;
+    }
+
+    //for multiple permissions
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CODE_ASK_PERMISSIONS:
+                for(int i=0;i<listPermissionsNeeded.size();i++){
+                    if(grantResults[i]== PackageManager.PERMISSION_DENIED){
+                        //do your stuff
+                       /* Toast.makeText(getActivity(), "some permissions Denied", Toast.LENGTH_SHORT)
+                                .show();*/
+                       getActivity().finish();
+                        break;
+
+                    }
+
+                }
+
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
 
 
 }

@@ -1,6 +1,9 @@
 package com.ridelimos.ridelimos.views;
 
 import android.Manifest;
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -17,6 +20,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -88,6 +92,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
+import static android.Manifest.permission.ACCESS_FINE_LOCATION;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.app.Activity.RESULT_CANCELED;
 import static android.app.Activity.RESULT_OK;
 import static com.google.android.gms.internal.zzt.TAG;
@@ -146,7 +153,12 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
     private Polyline polyline;
     private View mapView, dottedView;
     View circleView;
-    private ArrayList<String> listPermissionsNeeded;
+
+    private ArrayList<String> permissionsToRequest;
+    private ArrayList<String> permissionsRejected = new ArrayList<>();
+    private ArrayList<String> permissions = new ArrayList<>();
+    private final static int ALL_PERMISSIONS_RESULT = 107;
+    private Timer timer;
 
 
     @Override
@@ -230,6 +242,8 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
         btnconfbooking.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                i=0;
+                circularProgressBar.setProgress(0);
                 overlay.setVisibility(View.VISIBLE);
                 customView = new CustomView(getActivity());
                 circleOverlayView.addView(customView);
@@ -237,13 +251,14 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
                 //--- time to complete progress -----
                 int animationDuration = 30000; // milli second
                 circularProgressBar.setProgressWithAnimation(100, animationDuration);
+
                 hideConfView();
                 primaryBottomView.setVisibility(View.GONE);
                 //set animation
-                YoYo.with(Techniques.FadeOut)
+               /* YoYo.with(Techniques.FadeOut)
                         .duration(10000)
-                        .repeat(50)
-                        .playOn(circleView);
+                        .repeat(150)
+                        .playOn(circleView);*/
                 //handler.sendEmptyMessageDelayed(11,30000);
             }
         });
@@ -258,11 +273,25 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
 
         //init
 
-        permissionsRequest();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            askPermissions();
+
+        }
+        else{
+            final LocationManager manager = (LocationManager) getActivity().getSystemService( Context.LOCATION_SERVICE );
+
+            if ( !manager.isProviderEnabled( LocationManager.GPS_PROVIDER ) ) {
+                buildAlertMessageNoGps();
+
+            }
+            else {
+                buildGoogleApiClient();
+                createLocationRequest();
+            }
+        }
         hideConfView();
 
-        buildGoogleApiClient();
-        createLocationRequest();
+
         setUpMapIfNeeded();
         setHasOptionsMenu(true);
 
@@ -276,13 +305,6 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
         SupportMapFragment supportMapFragment = ((SupportMapFragment) this.getChildFragmentManager().findFragmentById(R.id.map));
         supportMapFragment.getMapAsync(this);
         mapView = supportMapFragment.getView();
-    }
-
-    protected void permissionsRequest() {
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            checkAndRequestPermissions();
-            return;
-        }
     }
 
     @Override
@@ -520,6 +542,10 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
     public void showConfView() {
         primaryBottomView.setVisibility(View.GONE);
         confBottomView.setVisibility(View.VISIBLE);
+       /* YoYo.with(Techniques.SlideInUp)
+                .duration(10000)
+                .repeat(1)
+                .playOn(confBottomView);*/
        /* confBottomView.setAlpha(0.0f);
 
 // Start the animation
@@ -702,10 +728,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
             // The user canceled the operation.
         }
 
-
     }
-
-
     /**
      * Method to get route to destination
      *
@@ -782,69 +805,153 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
             primaryBottomView.setVisibility(View.VISIBLE);
         }
     };
+    private void askPermissions() {
+        boolean hasPermission=true;
+        permissions.add(ACCESS_FINE_LOCATION);
+        permissions.add(ACCESS_COARSE_LOCATION);
+        permissions.add(WRITE_EXTERNAL_STORAGE);
+        permissionsToRequest = findUnAskedPermissions(permissions);
 
-    private boolean checkAndRequestPermissions() {
-        int permissionStorage = ContextCompat.checkSelfPermission(getActivity(),
-                Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        int locationPermission = ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION);
-        listPermissionsNeeded = new ArrayList<>();
-        if (locationPermission != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        for (String perms : permissionsToRequest) {
+            if (!hasPermission(perms)) {
+                hasPermission=false;
+                requestPermissions(permissionsToRequest.toArray(new String[permissionsToRequest.size()]), ALL_PERMISSIONS_RESULT);
+                break;
+            }
         }
-        if (permissionStorage != PackageManager.PERMISSION_GRANTED) {
-            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if(hasPermission){
+            buildGoogleApiClient();
+            createLocationRequest();
         }
 
-        if (!listPermissionsNeeded.isEmpty()) {
-            ActivityCompat.requestPermissions(getActivity(), listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]), REQUEST_CODE_ASK_PERMISSIONS);
-            return false;
+
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+
+        switch (requestCode) {
+
+            case ALL_PERMISSIONS_RESULT:
+                for (String perms : permissionsToRequest) {
+                    if (hasPermission(perms)) {
+
+                    } else {
+
+                        permissionsRejected.add(perms);
+                    }
+                }
+
+                if (permissionsRejected.size() > 0) {
+
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (shouldShowRequestPermissionRationale(permissionsRejected.get(0))) {
+                            showMessageOKCancel("These permissions are mandatory for the application. Please allow access.",
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                                requestPermissions(permissionsRejected.toArray(new String[permissionsRejected.size()]), ALL_PERMISSIONS_RESULT);
+                                            }
+                                        }
+                                    });
+                            return;
+                        }
+                    }
+
+                }
+                else {
+                    buildGoogleApiClient();
+                    createLocationRequest();
+                }
+
+                break;
+        }
+
+    }
+
+    private boolean hasPermission(String permission) {
+        if (canMakeSmores()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                return (getActivity().checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED);
+            }
         }
         return true;
     }
 
-    //for multiple permissions
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        switch (requestCode) {
-            case REQUEST_CODE_ASK_PERMISSIONS:
-                for (int i = 0; i < listPermissionsNeeded.size(); i++) {
-                    if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
-                        //do your stuff
-                       /* Toast.makeText(getActivity(), "some permissions Denied", Toast.LENGTH_SHORT)
-                                .show();*/
-                        getActivity().finish();
-                        break;
-
-                    }
-
-                }
-
-                break;
-            default:
-                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
+    private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener) {
+        new AlertDialog.Builder(getActivity())
+                .setMessage(message)
+                .setPositiveButton("OK", okListener)
+                .setNegativeButton("Cancel", null)
+                .create()
+                .show();
     }
+
+
+    private boolean canMakeSmores() {
+        return (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1);
+    }
+
+    private ArrayList<String> findUnAskedPermissions(ArrayList<String> wanted) {
+        ArrayList<String> result = new ArrayList<String>();
+
+        for (String perm : wanted) {
+            if (!hasPermission(perm)) {
+                result.add(perm);
+            }
+        }
+
+        return result;
+    }
+
 
     //--- Custom animation function
     public void startViewAnimation() {
-        final Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if (i < 70) { // Please change '70' according to how long you want to go
-                    getActivity().runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            int baseRadius = 20; // base radius is basic radius of circle from which to start animation
-                            customView.updateView(i + baseRadius);
-                            i++;
-                        }
-                    });
-                } else {
-                    i = 0;
+        customView.invalidate();
+        timer = new Timer();
+        try {
+            timer.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    if (i < 70) { // Please change '70' according to how long you want to go
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+
+                                int baseRadius = 80; // base radius is basic radius of circle from which to start animation
+                                customView.updateView(i + baseRadius);
+                                i++;
+                            }
+                        });
+                    } else {
+                        i = 0;
+                    }
                 }
-            }
-        }, 0, 10); // change '500' to milliseconds for how frequent you want to update radius
+            }, 0, 10); // change '500' to milliseconds for how frequent you want to update radius
+        }
+        catch (Exception e){}
+    }
+
+
+    private void buildAlertMessageNoGps() {
+        final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setMessage("Your GPS seems to be disabled, do you want to enable it?")
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    public void onClick(@SuppressWarnings("unused") final DialogInterface dialog, @SuppressWarnings("unused") final int id) {
+                        startActivity(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    public void onClick(final DialogInterface dialog, @SuppressWarnings("unused") final int id) {
+                        dialog.cancel();
+                    }
+                });
+        final AlertDialog alert = builder.create();
+        alert.show();
     }
 }
 

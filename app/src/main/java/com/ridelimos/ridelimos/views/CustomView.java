@@ -21,7 +21,7 @@ public class CustomView extends View {
         paint.setStyle(Paint.Style.STROKE);
         paint.setColor(Color.RED);
         paint.setAntiAlias(true);
-        paint.setStrokeWidth(2f);
+        paint.setStrokeWidth(1f);
     }
 
     public void updateView(int radius) {

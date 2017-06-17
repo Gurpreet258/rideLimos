@@ -234,7 +234,7 @@ public class BookFrag extends Fragment implements OnMapReadyCallback, LocationLi
                 customView = new CustomView(getActivity());
                 circleOverlayView.addView(customView);
                 startViewAnimation();
-                //--- time to complete progress
+                //--- time to complete progress -----
                 int animationDuration = 30000; // milli second
                 circularProgressBar.setProgressWithAnimation(100, animationDuration);
                 hideConfView();
